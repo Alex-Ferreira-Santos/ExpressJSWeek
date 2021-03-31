@@ -10,6 +10,11 @@ class Employee extends EntityBase {
         return Util.formatCurrency(this.#grossPay)
     }
 
+    get netPay(){
+        const result = this.#grossPay - (this.#grossPay * Employee.#TAXES_PERCENTUAL)
+        return Util.formatCurrency(result)
+    }
+
 }
 
 module.exports = Employee
