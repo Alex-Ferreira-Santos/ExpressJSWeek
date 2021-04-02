@@ -1,90 +1,96 @@
-const BTN_REINICIAR = 'btnReiniciar'
-const ID_CONTADOR = 'contador'
-const VALOR_CONTADOR = 100
-const PERIODO_INTERVALO = 10
+// IIFE -> Immeately Invoked Function Expression
+(()=>{
 
-class ContadorComponent{
-    constructor(){
-        this.inicializar()
-    }
+    const BTN_REINICIAR = 'btnReiniciar'
+    const ID_CONTADOR = 'contador'
+    const VALOR_CONTADOR = 100
+    const PERIODO_INTERVALO = 10
 
-    preparaContadorProxy(){
-        const handler = {
-            set: (currentContext, propertyKey, newValue) => {
-                console.log({currentContext, propertyKey, newValue})
-                // para parar todo o processamento
-                if(!currentContext.valor){
-                    currentContext.efetuarParada()
+    class ContadorComponent{
+        constructor(){
+            this.inicializar()
+        }
+
+        preparaContadorProxy(){
+            const handler = {
+                set: (currentContext, propertyKey, newValue) => {
+                    console.log({currentContext, propertyKey, newValue})
+                    // para parar todo o processamento
+                    if(!currentContext.valor){
+                        currentContext.efetuarParada()
+                    }
+                    currentContext[propertyKey] = newValue
+                    return true
                 }
-                currentContext[propertyKey] = newValue
-                return true
+            }
+
+            const contador = new Proxy({
+                valor: VALOR_CONTADOR,
+                efetuarParada: ()=>{}
+            },handler)
+
+            return contador
+        }
+
+        atualizarTexto = ({elementoContador,contador}) => () =>{
+            const identificadorTexto = '$$contador'
+            const textoPadrao = `Começando em <strong>${identificadorTexto}</strong> segundos...`
+            elementoContador.innerHTML = textoPadrao.replace(identificadorTexto,contador.valor--)
+        }
+
+        agendarParadaContador({elementoContador,idIntervalo}){
+            return () => {
+                clearInterval(idIntervalo)
+                elementoContador.innerHTML = ''
+                this.desabilitarBotao(false)
             }
         }
 
-        const contador = new Proxy({
-            valor: VALOR_CONTADOR,
-            efetuarParada: ()=>{}
-        },handler)
+        prepararBotao(elementoBotao,iniciarFn){
+            elementoBotao.addEventListener('click',iniciarFn.bind(this))
+            return (valor = true) => {
+                const atributo = 'disabled'
 
-        return contador
-    }
+                if(valor){
+                    elementoBotao.setAttribute(atributo,valor)
+                    return
+                }
 
-    atualizarTexto = ({elementoContador,contador}) => () =>{
-        const identificadorTexto = '$$contador'
-        const textoPadrao = `Começando em <strong>${identificadorTexto}</strong> segundos...`
-        elementoContador.innerHTML = textoPadrao.replace(identificadorTexto,contador.valor--)
-    }
-
-    agendarParadaContador({elementoContador,idIntervalo}){
-        return () => {
-            clearInterval(idIntervalo)
-            elementoContador.innerHTML = ''
-            this.desabilitarBotao()
+                elementoBotao.removeAttribute(atributo)
+            }
         }
-    }
 
-    prepararBotao(elementoBotao,iniciarFn){
-        elementoBotao.addEventListener('click',iniciarFn.bind(this))
-        return (valor = true) => {
-            const atributo = 'disabled'
+        inicializar(){
+            console.log('Inicializou!!')
+            const elementoContador = document.getElementById(ID_CONTADOR)
 
-            if(valor){
-                elementoBotao.setAttribute(atributo,valor)
-                return
+            const contador = this.preparaContadorProxy()
+            //contador.valor = 100
+            //contador.valor = 90
+            //contador.valor = 80
+
+            const argumentos = {
+                elementoContador,
+                contador
             }
 
-            elementoBotao.removeAttribute(atributo)
+            const fn = this.atualizarTexto(argumentos)
+
+            const idIntervalo = setInterval(fn, PERIODO_INTERVALO)
+
+            {
+                const elementoBotao = document.getElementById(BTN_REINICIAR)
+                const desabilitarBotao = this.prepararBotao(elementoBotao,this.inicializar)
+                desabilitarBotao()
+
+                const argumentos = { elementoContador, idIntervalo }
+                //const desabilitarBotao = () => console.log('Desabilitou')
+                const paraContadorFn = this.agendarParadaContador.apply({desabilitarBotao},[argumentos])
+
+                contador.efetuarParada = paraContadorFn
+            }
+            
         }
     }
-
-    inicializar(){
-        console.log('Inicializou!!')
-        const elementoContador = document.getElementById(ID_CONTADOR)
-
-        const contador = this.preparaContadorProxy()
-        //contador.valor = 100
-        //contador.valor = 90
-        //contador.valor = 80
-
-        const argumentos = {
-            elementoContador,
-            contador
-        }
-
-        const fn = this.atualizarTexto(argumentos)
-
-        const idIntervalo = setInterval(fn, PERIODO_INTERVALO)
-
-        {
-            const elementoBotao = document.getElementById(BTN_REINICIAR)
-            const desabilitarBotao = this.prepararBotao(elementoBotao,this.inicializar)
-
-            const argumentos = { elementoContador, idIntervalo }
-            //const desabilitarBotao = () => console.log('Desabilitou')
-            const paraContadorFn = this.agendarParadaContador.apply({desabilitarBotao},[argumentos])
-
-            contador.efetuarParada = paraContadorFn
-        }
-        
-    }
-}
+    window.ContadorComponent = ContadorComponent
+})()
