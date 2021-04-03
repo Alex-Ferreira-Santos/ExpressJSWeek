@@ -7,6 +7,10 @@ class Todo{
         this.status = ''
         this.id = uuid.v4()
     }
+
+    isValid(){ 
+        return !!this.text && !isNaN(this.when.valueOf())
+    }
 }
 
 module.exports = Todo
